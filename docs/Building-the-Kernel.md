@@ -125,6 +125,49 @@ The kernel gets compiled in about 5-10 mins on my Virtualbox Debian, but YMMV.
 
 Once the compilation is complete, you now have a compressed Linux kernel image.
 
+
+
+## Use the latest kernel in Altera's fork 
+
+The Altera's fork ([https://github.com/altera-fpga/linux-socfpga](https://github.com/altera-fpga/linux-socfpga)) is also up-to-date now (Linux 6.12 at June 2025) and could be utilized. However following modifications must be made in file [arch/arm/mach-socfpga/fpga-dma.c](arch/arm/mach-socfpga/fpga-dma.c) to pass compilation:
+
+- Include `platform_device.h`
+
+  `struct platform_device` is declared and defined in this header, so it must be included
+
+- Replace `no_llseek` with `NULL`
+
+  This function was removed in the new versions of the kernel (?) and assigning NULL to the pointer seems working 
+
+- Replace `devm_ioremap_nocache` with `devm_ioremap`
+
+- Type casting `.remove = (void(*)(struct platform_device *)) fpga_dma_remove` 
+
+  The kernel is compiled with `-Wcast-function-type` flag so if no casting there will be error
+
+In conclusion, add following lines after includes:
+
+```c
+#include <linux/platform_device.h>
+#define no_llseek NULL
+#define devm_ioremap_nocache devm_ioremap
+```
+
+and in initializing `struct fpga_dma_driver` cast the function as:
+
+```c
+static struct platform_driver fpga_dma_driver = {
+	.probe = fpga_dma_probe,
+	// .remove = fpga_dma_remove,
+	.remove = (void(*)(struct platform_device *)) fpga_dma_remove,
+	.driver = {
+		   .name = "fpga_dma",
+		   .owner = THIS_MODULE,
+		   .of_match_table = of_match_ptr(fpga_dma_of_match),
+	},
+};
+```
+
 # References
 
 [Building embedded linux for the Terasic DE10-Nano](https://bitlog.it/20170820_building_embedded_linux_for_the_terasic_de10-nano.html) - A large part of this page has been taken from here.
