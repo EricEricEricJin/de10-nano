@@ -281,6 +281,24 @@ make ARCH=arm -j 24
 
 Once the compilation completes, it should have generated the file `u-boot-with-spl.sfp`. This is the bootloader combined with the secondary program loader (spl).
 
+## Notice to cross compilation
+
+If your host PC (i.e., the environment you are running to do all these works) is not ARM, then you need to add `CROSS_COMPILE` flag during all `make`, by changing 
+
+```bash
+make ARCH=arm -j 24
+```
+
+into
+
+```bash
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j 24
+```
+
+where `arm-linux-gnueabihf-` is the prefix of cross compiler. The HPS of the SoC on DE10-Nano is an ARM32 professor with FPU, so `arm-linux-gnueabihf-` should be installed and used (`hf` means hard-float).
+
+This `CROSS_COMPILE` flag should be applied to all `make` procedures, including building the U-boot (here), the kernel, and the rootfs.
+
 ## References
 
 [Official U-Boot repository](https://github.com/u-boot/u-boot) - The README has most of the instructions.
